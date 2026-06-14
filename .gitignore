@@ -1,0 +1,26 @@
+# NEVER commit keys / secrets / env
+.env
+*.key
+*.pem
+secrets/
+wallets/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# logs / local state
+logs/
+*.jsonl
+
+# TS wallet-worker
+wallet/node_modules/
+wallet/dist/
+node_modules/
+
+# python build artifacts
+*.egg-info/
+build/
+dist/

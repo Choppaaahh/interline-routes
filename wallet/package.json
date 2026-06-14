@@ -1,0 +1,23 @@
+{
+  "name": "interline-wallet-worker",
+  "version": "0.1.0",
+  "description": "v2 non-custodial scoped agent wallet — ERC-4337 Kernel account + session keys (Base). The TS half of the polyglot stack; Python x402 orchestrates.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^25.9.3",
+    "@zerodev/ecdsa-validator": "^5.4.9",
+    "@zerodev/permissions": "^5.6.3",
+    "@zerodev/sdk": "^5.5.10",
+    "@zerodev/webauthn-key": "^5.5.0",
+    "permissionless": "^0.3.6",
+    "tslib": "^2.8.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "viem": "^2.52.2"
+  }
+}

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "interline"
+version = "0.1.0"
+description = "Neutral, non-custodial MCP server that lets any AI agent pay across payment rails (x402 today, more landing) through one integration — rail-discovery + routing + a unified receipt ledger."
+readme = "mcp_router/README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["mcp", "model-context-protocol", "x402", "agent-payments", "payment-router", "agentic-payments", "non-custodial", "usdc", "ai-agent"]
+dependencies = [
+    "mcp>=1.0",
+    "httpx>=0.28",
+    "x402>=2.13",
+    "eth-account>=0.13",
+    "web3>=7.0",
+]
+
+[project.scripts]
+# how MCP clients launch it: `uvx interline` (stdio MCP server)
+interline = "mcp_router.server:main"
+
+[tool.setuptools]
+packages = ["mcp_router", "router"]

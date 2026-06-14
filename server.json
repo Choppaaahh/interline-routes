@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.choppaaahh/interline",
+  "description": "Neutral, non-custodial payment router for AI agents: discover which rails a paid endpoint accepts, pay across them (x402 today, more landing) through one integration, with a unified cross-rail receipt ledger.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/Choppaaahh/interline-routes",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "interline",
+      "version": "0.1.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "APV0_BUYER_PRIVATE_KEY",
+          "description": "Your own wallet private key (0x...). Stays in your env; the server never holds funds. Required only for pay_for_resource, not for discovery.",
+          "isSecret": true,
+          "isRequired": false
+        },
+        {
+          "name": "APV0_NETWORK",
+          "description": "base-sepolia (testnet) or base (mainnet). Default base-sepolia.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}
