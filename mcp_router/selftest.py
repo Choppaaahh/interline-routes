@@ -110,6 +110,29 @@ def main():
     hist = server.payment_history(limit=5)
     check("payment_history returns count+settlements", "count" in hist and "settlements" in hist)
 
+    # 6. known-rails catalog (GOLDEN — neutral landscape, settle-vs-handoff honesty)
+    cat = discovery.known_rails_catalog()
+    check("catalog has 5 known rails", cat["rail_count"] == 5)
+    check("native_settle = [x402, mpp, ap2] (golden)", cat["native_settle"] == ["x402", "mpp", "ap2"])
+    check("handoff = [virtuals-acp, openai-stripe-acp] (golden)",
+          cat["handoff"] == ["virtuals-acp", "openai-stripe-acp"])
+    by = {r["name"]: r for r in cat["rails"]}
+    check("x402 is native-settle", by["x402"]["route_mode"] == "native-settle")
+    check("mpp is native-settle (the cross-protocol wedge)", by["mpp"]["route_mode"] == "native-settle")
+    check("mpp is a settlement-rail (a 2nd protocol, not an authz layer)", by["mpp"]["kind"] == "settlement-rail")
+    check("ap2 is native-settle", by["ap2"]["route_mode"] == "native-settle")
+    check("virtuals-acp is handoff (its own x402 escrow)", by["virtuals-acp"]["route_mode"] == "handoff")
+    # honesty assertion: ACP is card-only -> handoff, NOT a crypto rail we settle
+    check("openai-stripe-acp is handoff", by["openai-stripe-acp"]["route_mode"] == "handoff")
+    check("openai-stripe-acp settle_asset is fiat/card (NOT crypto — honesty)",
+          "card" in by["openai-stripe-acp"]["settle_asset"].lower() or "fiat" in by["openai-stripe-acp"]["settle_asset"].lower())
+    required = {"name", "kind", "route_mode", "networks", "settle_asset", "what", "docs"}
+    check("every rail has full metadata", all(required <= set(r) for r in cat["rails"]))
+    check("every route_mode is native-settle or handoff",
+          all(r["route_mode"] in ("native-settle", "handoff") for r in cat["rails"]))
+    # the MCP tool returns the same catalog
+    check("server.list_known_rails tool == catalog", server.list_known_rails() == cat)
+
     print()
     if FAILS:
         print(f"SELF-TEST FAIL: {len(FAILS)} -> {FAILS}")

@@ -22,7 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mcp.server.fastmcp import FastMCP  # noqa: E402
-from mcp_router.discovery import discover_rails  # noqa: E402
+from mcp_router.discovery import discover_rails, known_rails_catalog  # noqa: E402
 
 mcp = FastMCP("interline")
 
@@ -52,6 +52,17 @@ def pay_for_resource(url: str, task: str = "", max_price_usdc: float = 0.01) -> 
         return {"ok": True, **result}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": str(e)}
+
+
+@mcp.tool()
+def list_known_rails() -> dict:
+    """List EVERY agent-payment rail/protocol Interline knows about + how it relates to each — the neutral catalog.
+
+    Separates rails Interline SETTLES natively (route_mode=native-settle: x402, AP2-via-adapter) from protocols
+    it ROUTES you TO but does not settle (route_mode=handoff: Virtuals ACP's own on-chain escrow, OpenAI/Stripe
+    ACP's card-only delegated payment). One call = the whole agent-payment landscape, including the rails we
+    don't move funds on. Pair with discover_payment_rails (what a specific endpoint accepts)."""
+    return known_rails_catalog()
 
 
 @mcp.tool()

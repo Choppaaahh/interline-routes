@@ -12,18 +12,26 @@ the buyer's signing is genuinely protocol-correct, not just self-consistent.
 
 Why a mock first: proves the entire x402 loop (402 -> sign -> retry -> verify ->
 settle -> 200) end-to-end with zero testnet setup, zero faucet, zero key-at-risk.
-Same discipline as standard minimum-size-first / dry-run-first.
+Same discipline as a minimum-size-first / dry-run-first.
 Swap APV0_NETWORK=base-sepolia to route verify/settle to the real facilitator.
 """
 from __future__ import annotations
 
 import hashlib
+import threading
 import time
 from dataclasses import dataclass
 
 from eth_account import Account
 from x402.mechanisms.evm.eip712 import hash_eip3009_authorization
 from x402.mechanisms.evm.types import ExactEIP3009Authorization
+
+
+def _to_int(v) -> int:
+    """HARDENED: parse an amount/value tolerant of hex strings ('0x..') AND
+    decimal strings/ints — EIP-3009 encodings vary. (hardened: tolerate hex + decimal encodings.)"""
+    s = str(v)
+    return int(s, 16) if s.lower().startswith("0x") else int(s)
 
 
 @dataclass
@@ -45,6 +53,7 @@ class MockFacilitator:
 
     def __init__(self) -> None:
         self._spent_nonces: set[str] = set()  # replay protection (a real chain does this via the nonce)
+        self._lock = threading.Lock()  # HARDENED: guard the check-then-mark TOCTOU on settle
 
     def verify(self, payment: dict, requirements: dict) -> VerifyResult:
         """Real signer-recovery against SDK-built typed-data; no chain read."""
@@ -67,6 +76,11 @@ class MockFacilitator:
                 authz, int(extra["chainId"]), requirements["asset"],
                 extra.get("name", "USDC"), extra.get("version", "2"),
             )
+            # NOTE (security): Account._recover_hash is a PRIVATE eth-account
+            # method (underscore) — version-fragile across eth-account releases. Pinned via
+            # requirements.txt (eth-account==0.13.7). This is the DRY-RUN mock only; the LIVE
+            # facilitator (facilitator_real.py) uses the x402 SDK's own client, not this path.
+            # If eth-account is bumped, re-verify this call (or switch to a public recover API).
             recovered = Account._recover_hash(
                 msg_hash, signature=bytes.fromhex(sig.removeprefix("0x"))
             )
@@ -76,7 +90,7 @@ class MockFacilitator:
             # policy checks (the same ones a real facilitator enforces on-chain)
             if auth["to"].lower() != requirements["payTo"].lower():
                 return VerifyResult(False, "payTo mismatch")
-            if int(auth["value"]) < int(requirements["amount"]):
+            if _to_int(auth["value"]) < _to_int(requirements["amount"]):
                 return VerifyResult(False, "amount below required")
             now = int(time.time())
             if int(auth["validAfter"]) > now or now > int(auth["validBefore"]):
@@ -93,7 +107,12 @@ class MockFacilitator:
         if not v.is_valid:
             return SettleResult(False, reason=v.reason)
         auth = payment["payload"]["authorization"]
-        self._spent_nonces.add(auth["nonce"])
+        # HARDENED: atomic check-then-mark closes the TOCTOU where two concurrent
+        # settles of the same nonce both pass verify() before either marks it spent.
+        with self._lock:
+            if auth["nonce"] in self._spent_nonces:
+                return SettleResult(False, reason="nonce already spent (replay)")
+            self._spent_nonces.add(auth["nonce"])
         fake_tx = "0x" + hashlib.sha256(
             (auth["nonce"] + auth["from"] + auth["to"] + str(auth["value"])).encode()
         ).hexdigest()

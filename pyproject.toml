@@ -16,11 +16,22 @@ dependencies = [
     "x402>=2.13",
     "eth-account>=0.13",
     "web3>=7.0",
+    "fastapi>=0.110",
 ]
+
+# router.paywall / router.seller expose the HTTP Paywall (FastAPI). The MPP/Tempo
+# (pympp) and Solana (solders) rail SDKs are lazy-imported — only needed when that
+# rail is actually used — so they stay out of the base install. `uvicorn` (to serve
+# the Paywall as a process) is the one optional extra.
+[project.optional-dependencies]
+server = ["uvicorn>=0.27"]
 
 [project.scripts]
 # how MCP clients launch it: `uvx interline` (stdio MCP server)
 interline = "mcp_router.server:main"
 
-[tool.setuptools]
-packages = ["mcp_router", "router"]
+# auto-discover all subpackages (router.rails / router.inbound were silently
+# omitted by a static ["mcp_router","router"] list -> clean-install Paywall(...)
+# hit ModuleNotFoundError: router.rails. find scopes to the two top packages.)
+[tool.setuptools.packages.find]
+include = ["mcp_router*", "router*"]

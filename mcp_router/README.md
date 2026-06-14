@@ -6,7 +6,7 @@ Two things your agent gets, **today**:
 1. **Discover** which payment rail(s) any paid endpoint accepts — *before* paying. (The discovery layer single-rail clients don't have.)
 2. **Pay** through it — non-custodial, your own key, capped.
 
-And the part that pays off **tomorrow**: **integrate once.** [x402](https://x402.org) (HTTP 402 + USDC on Base) is live today; every future rail (Stripe MPP, …) drops into the *same tool* with **zero code change**. **Never re-integrate agent payments again** — when the next rail ships, your agent already speaks it.
+And the part that pays off across **every rail**: **integrate once.** Three rails are live today — [x402](https://x402.org) (HTTP 402 + USDC) on EVM (Base Sepolia) and on Solana (devnet), plus **MPP** on Tempo (Moderato testnet) — all behind the *same tool*. Real on-chain agent-to-agent settles are confirmed on all three. Every future rail drops in with **zero code change**. **Never re-integrate agent payments again** — when the next rail ships, your agent already speaks it.
 
 This is **not "another x402 MCP."** Single-rail clients make you wire up one rail (and re-wire for the next). This is the **discovery + routing layer above them** — same shape OpenRouter has for models. Non-custodial by design: payments use **your own wallet key**; this server never holds, sees, or routes funds through itself.
 
@@ -60,4 +60,4 @@ Local dev (from a clone):
 
 ## Status
 
-v0 — x402 rail live (USDC on Base). Neutral by construction: `discover_payment_rails` already surfaces *any* rail an endpoint offers; the second rail (MPP) is a drop-in adapter, no caller change. Built on the [interline-routes](https://github.com/Choppaaahh/interline-routes) rail-agnostic core.
+Three rails live — x402 USDC on EVM (Base Sepolia) and on Solana (devnet), plus MPP on Tempo (Moderato testnet). Real on-chain agent-to-agent settles confirmed on all three. Neutral by construction: `discover_payment_rails` surfaces *any* rail an endpoint offers, and each additional rail is a drop-in adapter with no caller change. Built on the [interline-routes](https://github.com/Choppaaahh/interline-routes) rail-agnostic core.

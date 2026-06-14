@@ -6,9 +6,12 @@ fragmented agent-payment-rail stack — *"OpenRouter for agent payments."* Built
 [x402](https://x402.org) (HTTP-402 micropayments, USDC), aggregator-shaped so adding
 a rail is one adapter, not a rewrite.
 
-Today it routes **USDC over x402 across two networks (EVM + Solana)** behind one
-`Paywall.gate()` call, ships an **MCP router** so agents can discover + pay endpoints,
-and includes a **Google-AP2 inbound adapter** — a signed AP2 mandate (verified, constraint-checked + freshness-gated) settles non-custodially on the rails.
+Today it routes payments across **three live rails** — **x402** USDC on EVM
+(Base Sepolia) and on Solana (devnet), plus **MPP** on Tempo (Moderato testnet) —
+all behind one `Paywall.gate()` call. Real on-chain agent-to-agent settles are
+confirmed on all three. It ships an **MCP router** so agents can discover + pay
+endpoints, and includes a **Google-AP2 inbound adapter** — a signed AP2 mandate
+(verified, constraint-checked + freshness-gated) settles non-custodially on the rails.
 
 
 ## Run the demo (no wallet, no faucet, no risk)
@@ -46,7 +49,8 @@ protocol-correct against real USDC.
 | `router/ledger.py` | settlement receipt-ledger → `logs/agent_payment_settlements.jsonl` (audit trail) |
 | `router/seller.py` | FastAPI agent that sells work — defines the requirements + work, wires one `Paywall.gate()` |
 | `router/buyer.py` | agent that auto-pays 402s (`pay_and_get`) with a client-side spend limit |
-| `router/facilitator_mock.py` | in-process verify+settle (real sig check via the x402 SDK's EIP-3009 typed-data, mock chain) — the dry-run rail |
+| `router/eip3009.py` | the one crypto-subtle file: EIP-3009 typed-data, shared by buyer+facilitator so they can't drift |
+| `router/facilitator_mock.py` | in-process verify+settle (real sig check, mock chain) — the dry-run rail |
 | `router/facilitator_real.py` | live x402 facilitator over HTTP via the x402 SDK's own client; `get_facilitator()` picks mock↔real by config |
 | `router/config.py` | network/asset facts + `.env` loader; mock↔testnet↔mainnet is a one-line env change |
 | `run_demo.py` | end-to-end smoke (ephemeral keys, mock facilitator) |

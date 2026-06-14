@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import base64
 import json
+import sys
 from typing import Callable
 
 from fastapi import Request
@@ -56,7 +57,15 @@ class Paywall:
     def gate(self, request: Request, work_fn: Callable[[], dict]) -> JSONResponse:
         resource = str(request.url)
         # 402 challenge offers EVERY rail's PaymentRequirements (the buyer picks one).
-        accepts = [r.payment_requirements(resource) for r in self._rails]
+        # HARDENED: guard per-rail so ONE broken rail can't crash the whole 402
+        # (which would block ALL rails, including working ones).
+        accepts = []
+        for r in self._rails:
+            try:
+                accepts.append(r.payment_requirements(resource))
+            except Exception as e:  # noqa: BLE001
+                print(f"[paywall] WARN rail {getattr(r, 'name', '?')} payment_requirements() raised "
+                      f"(omitted from 402 offer): {e}", file=sys.stderr)
 
         raw = request.headers.get(X_PAYMENT)
         if not raw:
@@ -69,9 +78,13 @@ class Paywall:
             payment = json.loads(base64.b64decode(raw))
         except Exception:  # noqa: BLE001
             return JSONResponse(status_code=400, content={"error": "malformed X-PAYMENT header"})
+        # HARDENED: a decoded payload that isn't a JSON object (list/int/str) would
+        # AttributeError on payment.get() downstream — reject cleanly as malformed.
+        if not isinstance(payment, dict):
+            return JSONResponse(status_code=400, content={"error": "X-PAYMENT must decode to a JSON object"})
 
         # route to the rail that handles the buyer's chosen payment.
-        # HARDENED — guard each matches() call so a misbehaving
+        # HARDENED: guard each matches() call so a misbehaving
         # rail on attacker-controlled `payment` can never 500 the money endpoint — same
         # defensive posture as the registry's match_rail() (router/rails/__init__.py).
         def _safe_match(r) -> bool:
@@ -87,23 +100,54 @@ class Paywall:
             )
         reqs = rail.payment_requirements(resource)
 
+        # HARDENED: a 3rd-party rail returning a non-conforming verify()/settle()
+        # result must not AttributeError-500 the gate — duck-type guard (aggregator
+        # extensibility defense; we accept any rail implementing the Rail Protocol).
         v = rail.verify(payment, reqs)
+        if not (hasattr(v, "is_valid") and hasattr(v, "reason")):
+            print(f"[paywall] ERROR rail {getattr(rail, 'name', '?')} verify() returned bad shape "
+                  f"({type(v).__name__}) — no settle", file=sys.stderr)
+            return JSONResponse(status_code=502, content={"error": "rail returned an invalid verify result"})
         if not v.is_valid:
             return JSONResponse(status_code=402, content={"error": f"payment invalid: {v.reason}", "accepts": accepts})
 
         s = rail.settle(payment, reqs)
+        if not all(hasattr(s, a) for a in ("success", "tx_hash", "network", "reason")):
+            print(f"[paywall] ERROR rail {getattr(rail, 'name', '?')} settle() returned bad shape "
+                  f"({type(s).__name__})", file=sys.stderr)
+            return JSONResponse(status_code=502, content={"error": "rail returned an invalid settle result"})
         if not s.success:
             return JSONResponse(status_code=402, content={"error": f"settlement failed: {s.reason}", "accepts": accepts})
 
-        # settled — record the receipt (tagged with the rail), then deliver the work.
+        # settled ON-CHAIN — from here the buyer has PAID; every downstream step is
+        # best-effort and must NOT cost them their payment (security review:
+        # post-settle robustness — money-received/work-not-delivered hardening).
         auth = (payment.get("payload") or {}).get("authorization") or {}
-        ledger.record_settlement(
-            tx_hash=s.tx_hash, payer=auth.get("from"), pay_to=reqs.get("payTo"),
-            amount_atomic=reqs.get("amount"), network=s.network,
-            task=request.query_params.get("task"), resource=resource,
-            rail=getattr(rail, "name", "x402"),
-        )
+        rail_name = getattr(rail, "name", "x402")
+        try:
+            ledger.record_settlement(
+                tx_hash=s.tx_hash, payer=auth.get("from"), pay_to=reqs.get("payTo"),
+                amount_atomic=reqs.get("amount"), network=s.network,
+                task=request.query_params.get("task"), resource=resource,
+                rail=rail_name,
+            )
+        except Exception as e:  # noqa: BLE001 — settle already happened on-chain; a ledger-write
+            # failure must NOT 500 a buyer who already paid. Log loudly for reconciliation, continue.
+            print(f"[paywall] WARN settled tx={s.tx_hash} but ledger write FAILED: {e} "
+                  f"(payer={auth.get('from')} rail={rail_name}) — RECONCILE", file=sys.stderr)
         receipt = base64.b64encode(
-            json.dumps({"txHash": s.tx_hash, "network": s.network, "rail": getattr(rail, "name", "x402")}).encode()
+            json.dumps({"txHash": s.tx_hash, "network": s.network, "rail": rail_name}).encode()
         ).decode()
-        return JSONResponse(status_code=200, content=work_fn(), headers={X_PAYMENT_RESPONSE: receipt})
+        # deliver the work; if work_fn raises, still return the RECEIPT (payment proof for an
+        # idempotent retry / reconciliation) rather than a bare 500 that hides the paid settlement.
+        try:
+            result = work_fn()
+        except Exception as e:  # noqa: BLE001
+            print(f"[paywall] WARN settled tx={s.tx_hash} but work_fn FAILED: {e} — buyer holds receipt", file=sys.stderr)
+            return JSONResponse(
+                status_code=502,
+                content={"error": "paid+settled but work failed; retry with the same payment",
+                         "txHash": s.tx_hash, "rail": rail_name},
+                headers={X_PAYMENT_RESPONSE: receipt},
+            )
+        return JSONResponse(status_code=200, content=result, headers={X_PAYMENT_RESPONSE: receipt})

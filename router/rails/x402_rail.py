@@ -43,7 +43,7 @@ class X402Rail:
 
     def matches(self, payment: dict) -> bool:
         # Must be the 'exact' scheme AND on this rail's network family.
-        # HARDENED — defensive guards for untrusted / malformed buyer input:
+        # HARDENED (adversarial validation):
         # buyer-controlled payment dict is untrusted JSON — guard every field type.
         scheme = payment.get("scheme", "exact")
         if not isinstance(scheme, str) or scheme != self.scheme:
@@ -59,11 +59,11 @@ class X402Rail:
         if not isinstance(net, str):
             return False
         # Require a real CAIP-2 id: exactly "<family>:<reference>", both non-empty
-        # ("eip155", "eip155:", "eip155:8453:extra", "" are all rejected).
+        # ("eip155", "eip155:", "eip155:8453:extra", "" all rejected).
         parts = net.split(":")
         if len(parts) != 2 or not parts[0] or not parts[1]:
             return False
-        # Case-insensitive family match (CAIP-2 reference casing is unspecified).
+        # Case-insensitive family match (CAIP-2 reference casing unspecified).
         return parts[0].lower() == self.network_family.lower()
 
     def verify(self, payment: dict, requirements: dict):

@@ -1,5 +1,5 @@
 """
-AP2 inbound adapter (Interline keystone) Phase 2.
+AP2 inbound adapter (Interline keystone) — Phase 2.
 
 AP2 (Google Agent Payments Protocol) is an AUTHORIZATION LAYER, not a settlement rail.
 This adapter sits IN FRONT of the rail registry: it takes a signed AP2 mandate, verifies
@@ -96,7 +96,7 @@ class AP2InboundAdapter:
         """Verify a JWS-signed mandate token. Returns the decoded payload, or raises.
 
         `issuer_public_key` is a jwcrypto JWK (the mandate issuer's public key). Delegates
-        to the SDK's `verify_jwt` — we do NOT hand-roll the crypto (hard-won lesson).
+        to the SDK's `verify_jwt` — we do NOT hand-roll the crypto (don't hand-roll protocol crypto).
         """
         return jwt_helper.verify_jwt(token, issuer_public_key)
 
@@ -153,7 +153,7 @@ class AP2InboundAdapter:
             return MandateVerdict(
                 ok=False, violations=violations, reason="payment exceeds mandate authority"
             )
-        # VULN-fix (surfaced in adversarial review): the upstream SDK verifies the SIGNATURE only —
+        # VULN-fix: the upstream SDK verifies the SIGNATURE only —
         # it does NOT enforce mandate freshness. Without this, an expired (even 13h-dead) or
         # future-dated mandate settles. Freshness is OUR responsibility on the money path.
         temporal = self._temporal_violations(payment_mandate)
@@ -166,7 +166,7 @@ class AP2InboundAdapter:
         """Reject expired / future-dated mandates (default-deny on missing exp). ±skew tolerance.
 
         `exp` / `iat` are Unix-epoch seconds on the generated PaymentMandate. The SDK does not
-        check them — this is the freshness gate that adversarial review flagged as a VULN.
+        check them — this is the freshness gate validation flagged as a VULN.
         """
         now = int(time.time())
         skew = self.clock_skew_seconds

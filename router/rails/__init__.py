@@ -13,8 +13,18 @@ from __future__ import annotations
 
 from .base import Rail
 from .x402_rail import X402Rail
+from .mpp_rail import (
+    MppRail,
+    MppMockFacilitator,
+    MppTempoFacilitator,
+    default_mpp_requirements_fn,
+)
 
-__all__ = ["Rail", "X402Rail", "register", "get_rail", "all_rails", "match_rail", "clear"]
+__all__ = [
+    "Rail", "X402Rail",
+    "MppRail", "MppMockFacilitator", "MppTempoFacilitator", "default_mpp_requirements_fn",
+    "register", "get_rail", "all_rails", "match_rail", "clear",
+]
 
 _REGISTRY: "dict[str, Rail]" = {}
 
