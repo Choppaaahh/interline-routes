@@ -18,7 +18,7 @@ Flow:
      returns (credential, receipt). Funds move buyer -> seller (pathUSD).
 
 Verify is by ON-CHAIN pathUSD BALANCE DELTA (read before/after), NOT the script print
-(Lesson #1). Keys from .env (run setup_tempo.py --faucet first). TESTNET ONLY.
+Keys from.env (run setup_tempo.py --faucet first). TESTNET ONLY.
 
     python3 run_mpp_live.py --check    # server boots + issues a 402 challenge (no payment)
     python3 run_mpp_live.py --live     # real on-chain settle (default 0.50 pathUSD)

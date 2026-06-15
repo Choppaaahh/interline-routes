@@ -120,7 +120,7 @@ class Paywall:
             return JSONResponse(status_code=402, content={"error": f"settlement failed: {s.reason}", "accepts": accepts})
 
         # settled ON-CHAIN — from here the buyer has PAID; every downstream step is
-        # best-effort and must NOT cost them their payment (security review:
+        # best-effort and must NOT cost them their payment (security note:
         # post-settle robustness — money-received/work-not-delivered hardening).
         auth = (payment.get("payload") or {}).get("authorization") or {}
         rail_name = getattr(rail, "name", "x402")

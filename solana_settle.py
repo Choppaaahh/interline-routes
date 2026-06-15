@@ -51,7 +51,7 @@ USDC_DECIMALS = 6
 
 def _reason(resp) -> str:
     """Defensive reason extractor — x402 Verify/Settle responses use invalid_reason /
-    invalid_message / error_reason, NOT `.reason` ( bug: `.reason` crashed every
+    invalid_message / error_reason, NOT `.reason` (`.reason` crashed every
     real rail-failure diagnostic path)."""
     for fld in ("invalid_reason", "invalid_message", "error_reason", "error_message", "reason"):
         val = getattr(resp, fld, None)

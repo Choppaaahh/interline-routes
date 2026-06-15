@@ -1,3 +1,5 @@
+<!-- mcp-name: io.github.Choppaaahh/interline -->
+
 # Interline (MCP server)
 
 **Rail-discovery + future-proof payments for AI agents — as an MCP server.**

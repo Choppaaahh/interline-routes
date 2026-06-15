@@ -100,7 +100,7 @@ def _record_settled(tx_id: str, tx_hash: str) -> None:
 def _reason(resp) -> str:
     """Defensive reason extractor — x402 Verify/Settle responses use different field names
     (invalid_reason / invalid_message / error_reason); `.reason` does NOT exist on them
-    ( bug: `.reason` crashed every real rail-failure diagnostic path)."""
+    (`.reason` crashed every real rail-failure diagnostic path)."""
     for fld in ("invalid_reason", "invalid_message", "error_reason", "error_message", "reason"):
         val = getattr(resp, fld, None)
         if val:

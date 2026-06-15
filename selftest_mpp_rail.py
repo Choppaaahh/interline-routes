@@ -14,7 +14,7 @@ Proves:
      payment routes to the rail that matches it — x402 payment -> x402 rail (receipt
      rail=x402), mpp payment -> mpp rail (receipt rail=mpp). One integration, two PROTOCOLS.
 
-Golden values are CC-computed and asserted verbatim (office-semantic-fidelity Lever 0).
+Golden values are hand-computed and asserted verbatim.
 
 Run from repo root: python3 selftest_mpp_rail.py
 """
@@ -88,7 +88,7 @@ def _body(resp):
     return json.loads(resp.body)
 
 
-# --- golden fixtures (CC-computed) ---
+# --- golden fixtures (hand-computed) ---
 MPP_REQS_FN = default_mpp_requirements_fn(
     currency="0xCURR", recipient="0xRECIP", amount="0.50", network="tempo-testnet",
 )

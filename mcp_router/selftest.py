@@ -29,7 +29,7 @@ def check(name, cond):
         FAILS.append(name)
 
 
-# --- GOLDEN FIXTURES (CC-computed, asserted verbatim — model must not recompute) ---
+# --- GOLDEN FIXTURES (hand-computed, asserted verbatim — model must not recompute) ---
 # single x402 rail: amount 1000 atomic / 1e6 = 0.001 USDC
 GOLDEN_SINGLE = {
     "x402Version": 2,

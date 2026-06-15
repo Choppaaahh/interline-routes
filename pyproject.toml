@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "interline"
-version = "0.1.0"
+version = "0.1.2"
 description = "Neutral, non-custodial MCP server that lets any AI agent pay across payment rails (x402 today, more landing) through one integration — rail-discovery + routing + a unified receipt ledger."
 readme = "mcp_router/README.md"
 requires-python = ">=3.10"
