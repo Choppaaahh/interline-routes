@@ -1,0 +1,9 @@
+.git
+__pycache__
+*.pyc
+.venv
+logs/
+wallet/node_modules
+wallet/dist
+*.key
+.env
