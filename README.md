@@ -1,5 +1,7 @@
 # Interline — agent-to-agent payment router
 
+> **Archived (2026-10-10).** Interline is no longer maintained. The code stays here for reference; nothing is being developed, and the testnet demos are not monitored.
+
 An **agent-to-agent payment router**: one agent does work, another agent pays for
 it, no human keys a card. **Interline** is a neutral, non-custodial router over the
 fragmented agent-payment-rail stack — *"OpenRouter for agent payments."* Built on
